@@ -14,11 +14,11 @@ type InvertNode struct {
 }
 
 type TermSign uint64
-type InvertRecord struct {
+type InvertList struct {
     Term    string
-    Type    uint32
-    InvertList  []InvertNode
+    Type    string
+    InvertNodes  []InvertNode
 }
 
-type InvertIndex map[TermSign]InvertRecord
+type InvertIndex map[TermSign]InvertList
 

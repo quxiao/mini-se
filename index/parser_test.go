@@ -54,7 +54,7 @@ func TestInvertRecordNormal1(t *testing.T) {
             "docid": 12345,
             "inverts": [
                 {
-                    "type": 0, 
+                    "type": "term", 
                     "fields": [{
                         "k": "iphone",
                         "v": "1.00"
@@ -62,14 +62,25 @@ func TestInvertRecordNormal1(t *testing.T) {
                         "k": "5s",
                         "v": "0.001"
                     }]
+                },{
+                    "type": "category",
+                    "fields": [{
+                        "k": "111000"
+                    }, {
+                        "k": "113000"
+                    }]
                 }
             ]
         }
     `
 
     parser := Parser{}
-    _, ok := parser.ParseInvertRecord(line)
+    r, ok := parser.ParseInvertRecord(line)
     if !ok {
         t.Errorf("parse failed")
+    }
+
+    if len(r) != 4 {
+        t.Errorf("len[%d] != 4", len(r))
     }
 }

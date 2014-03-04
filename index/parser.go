@@ -3,6 +3,8 @@ package index
 import (
     "fmt"
     "encoding/json"
+    "io"
+    "hash/fnv"
 )
 
 type ForwardRecord struct {
@@ -47,14 +49,27 @@ func (parser *Parser) ParseForwardRecord(line string) (*ForwardRecord, bool) {
     return r, ok
 }
 
-func (parser *Parser) ParseInvertRecord(line string) ([]SingleInvertNode, bool) {
+type KV struct {
+    K   string
+    V   string
+}
+type InvertRecordElement struct {
+    Type    string
+    Fields  []KV
+}
+type InvertRecord struct {
+    DocId   uint64
+    Inverts []InvertRecordElement
+}
+
+func (parser *Parser) ParseInvertRecord(line string) (InvertIndex, bool) {
     /*
         parse JSON-format invert index line
         {
             "docid": 12345,
             "inverts": [
                 {
-                    "type": 0,      //term
+                    "type": "term",      //term
                     "fields": [{
                         "k": "iphone",
                         "v": "1.00"
@@ -63,7 +78,7 @@ func (parser *Parser) ParseInvertRecord(line string) ([]SingleInvertNode, bool) 
                         "v": "0.001"
                     }]
                 },{
-                    "type": 1,      //category
+                    "type": "category",      //category
                     "fields": [{
                         "k": "111000",
                     }, {
@@ -75,25 +90,41 @@ func (parser *Parser) ParseInvertRecord(line string) ([]SingleInvertNode, bool) 
     */
 
     ok := true
-    var single_invert_nodes []SingleInvertNode
-    var inter interface{}
+    var invert_record InvertRecord
+    invert_index := make(InvertIndex)
 
-    err := json.Unmarshal([]byte(line), &inter)
+    err := json.Unmarshal([]byte(line), &invert_record)
     if err != nil {
         fmt.Printf("json parse failed. %v [%s]\n", err, line)
-        return single_invert_nodes, false
+        return invert_index, false
     }
-    res, ok := inter.(map[string]interface{})
-    if !ok {
-        fmt.Printf("json transform failed.\n")
-        return single_invert_nodes, false
-    }
-    for k, v := range res {
-        switch v.(type) {
-        case float64:
-            fmt.Printf("%v %v\n", k, v)
+    fmt.Printf("%v\n", invert_record)
+
+    for _, invert := range invert_record.Inverts {
+        fmt.Printf("%v\n", invert)
+        for _, kv := range invert.Fields {
+            fmt.Printf("k: [%s] -> v: [%s]\n", kv.K, kv.V)
+            term := kv.K
+            payload := kv.V
+            //make uint64 sign
+            h := fnv.New64()
+            io.WriteString(h, invert.Type + "_" + term)     //term_iphone
+            term_sign := TermSign(h.Sum64())
+            fmt.Printf("term_sign: %d\n", term_sign)
+            //push back to invert list
+            invert_node := InvertNode{invert_record.DocId, payload}
+            invert_list, ok := invert_index[term_sign]
+            if !ok {
+                var new_invert_list InvertList
+                new_invert_list.Term = term
+                new_invert_list.Type = invert.Type
+                invert_list = new_invert_list
+            }
+            invert_list.InvertNodes = append(invert_list.InvertNodes, invert_node)
+            invert_index[term_sign] = invert_list
         }
     }
 
-    return single_invert_nodes, ok
+    fmt.Printf("invert_index: %v\n", invert_index)
+    return invert_index, ok
 }
