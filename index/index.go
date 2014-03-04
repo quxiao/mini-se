@@ -1,11 +1,5 @@
 package index
 
-type SingleInvertNode struct {
-    Term    string
-    Docid   uint64
-    Playload    string
-}
-
 type InvertNode struct {
     DocId   uint64
     Payload string
@@ -20,5 +14,22 @@ type InvertList struct {
     InvertNodes  []InvertNode
 }
 
-type InvertIndex map[TermSign]InvertList
+type Index map[TermSign]InvertList
 
+func Merge(i1 Index, i2 Index) Index {
+    mergedIndex := make(Index)
+    for k, v := range i1 {
+        mergedIndex[k] = v
+    }
+    for k, v := range i2 {
+        invertList, ok := mergedIndex[k]
+        if ok {
+            invertList.InvertNodes = append(invertList.InvertNodes, v.InvertNodes...)
+            mergedIndex[k] = invertList
+        } else {
+            mergedIndex[k] = v
+        }
+    }
+
+    return mergedIndex
+}

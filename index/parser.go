@@ -62,7 +62,7 @@ type InvertRecord struct {
     Inverts []InvertRecordElement
 }
 
-func (parser *Parser) ParseInvertRecord(line string) (InvertIndex, bool) {
+func (parser *Parser) ParseInvertRecord(line string) (Index, bool) {
     /*
         parse JSON-format invert index line
         {
@@ -90,17 +90,17 @@ func (parser *Parser) ParseInvertRecord(line string) (InvertIndex, bool) {
     */
 
     ok := true
-    var invert_record InvertRecord
-    invert_index := make(InvertIndex)
+    var invertRecord InvertRecord
+    invertIndex := make(Index)
 
-    err := json.Unmarshal([]byte(line), &invert_record)
+    err := json.Unmarshal([]byte(line), &invertRecord)
     if err != nil {
         fmt.Printf("json parse failed. %v [%s]\n", err, line)
-        return invert_index, false
+        return invertIndex, false
     }
-    fmt.Printf("%v\n", invert_record)
+    fmt.Printf("%v\n", invertRecord)
 
-    for _, invert := range invert_record.Inverts {
+    for _, invert := range invertRecord.Inverts {
         fmt.Printf("%v\n", invert)
         for _, kv := range invert.Fields {
             fmt.Printf("k: [%s] -> v: [%s]\n", kv.K, kv.V)
@@ -109,22 +109,22 @@ func (parser *Parser) ParseInvertRecord(line string) (InvertIndex, bool) {
             //make uint64 sign
             h := fnv.New64()
             io.WriteString(h, invert.Type + "_" + term)     //term_iphone
-            term_sign := TermSign(h.Sum64())
-            fmt.Printf("term_sign: %d\n", term_sign)
+            termSign := TermSign(h.Sum64())
+            fmt.Printf("termSign: %d\n", termSign)
             //push back to invert list
-            invert_node := InvertNode{invert_record.DocId, payload}
-            invert_list, ok := invert_index[term_sign]
+            invertNode := InvertNode{invertRecord.DocId, payload}
+            invertList, ok := invertIndex[termSign]
             if !ok {
-                var new_invert_list InvertList
-                new_invert_list.Term = term
-                new_invert_list.Type = invert.Type
-                invert_list = new_invert_list
+                var newInvertList InvertList
+                newInvertList.Term = term
+                newInvertList.Type = invert.Type
+                invertList = newInvertList
             }
-            invert_list.InvertNodes = append(invert_list.InvertNodes, invert_node)
-            invert_index[term_sign] = invert_list
+            invertList.InvertNodes = append(invertList.InvertNodes, invertNode)
+            invertIndex[termSign] = invertList
         }
     }
 
-    fmt.Printf("invert_index: %v\n", invert_index)
-    return invert_index, ok
+    fmt.Printf("invertIndex: %v\n", invertIndex)
+    return invertIndex, ok
 }
