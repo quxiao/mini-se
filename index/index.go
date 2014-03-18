@@ -1,5 +1,9 @@
 package index
 
+import (
+    "sync"
+)
+
 type InvertNode struct {
     DocId   uint64
     Payload string
@@ -14,22 +18,45 @@ type InvertList struct {
     InvertNodes  []InvertNode
 }
 
-type Index map[TermSign]InvertList
+type RawIndex map[TermSign]InvertList
 
-func Merge(i1 Index, i2 Index) Index {
-    mergedIndex := make(Index)
-    for k, v := range i1 {
-        mergedIndex[k] = v
-    }
+type DocumentNode struct {
+    Term    string
+    Type    string
+    Payload string
+}
+
+//MiniIndex wraps all interface for indexing
+type MiniIndex struct {
+    Initialized         bool
+    TotalDocumentNum    uint64
+    TotalTermNum        uint64
+    innerRawIndex       RawIndex
+    rwLock              *sync.RWMutex
+    //TODO deleteDocSet        
+}
+
+func NewMiniIndex() *MiniIndex {
+    return &MiniIndex{true, 0, 0, make(RawIndex), new(sync.RWMutex)}
+}
+
+func (this *MiniIndex)merge(i1 RawIndex, i2 RawIndex) RawIndex {
+    mergedRawIndex := i1
     for k, v := range i2 {
-        invertList, ok := mergedIndex[k]
+        invertList, ok := mergedRawIndex[k]
         if ok {
             invertList.InvertNodes = append(invertList.InvertNodes, v.InvertNodes...)
-            mergedIndex[k] = invertList
+            mergedRawIndex[k] = invertList
         } else {
-            mergedIndex[k] = v
+            mergedRawIndex[k] = v
         }
     }
+    return mergedRawIndex
+}
 
-    return mergedIndex
+func (this *MiniIndex)AddRawIndex(rawIndex RawIndex) error {
+    this.rwLock.Lock()
+    this.innerRawIndex = this.merge(this.innerRawIndex, rawIndex)
+    this.rwLock.Unlock()
+    return nil
 }

@@ -62,7 +62,7 @@ type InvertRecord struct {
     Inverts []InvertRecordElement
 }
 
-func (parser *Parser) ParseInvertRecord(line string) (Index, bool) {
+func (parser *Parser) ParseInvertRecord(line string) (RawIndex, bool) {
     /*
         parse JSON-format invert index line
         {
@@ -91,7 +91,7 @@ func (parser *Parser) ParseInvertRecord(line string) (Index, bool) {
 
     ok := true
     var invertRecord InvertRecord
-    invertIndex := make(Index)
+    invertIndex := make(RawIndex)
 
     err := json.Unmarshal([]byte(line), &invertRecord)
     if err != nil {
