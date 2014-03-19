@@ -7,15 +7,17 @@ import (
 
 type InvertNode struct {
     DocId   uint64
-    Payload string
+    Payload string      //strategy infomartion, including weight, offset, ect.
     //Weight  float64
     //Offset  uint32
 }
 
-type TermSign uint64
+type TermSign uint64        //usually keyword + type, such as "iphone_query", or "camera_category"
+
 func (termSign TermSign) String() string {
     return fmt.Sprintf("[%016x]", uint64(termSign))
 }
+
 type InvertList struct {
     Term    string
     Type    string
@@ -35,13 +37,20 @@ type MiniIndex struct {
     Initialized         bool
     TotalDocumentNum    uint64
     TotalTermNum        uint64
-    innerRawIndex       RawIndex
+    rawIndex            RawIndex
+    forwardRecords      map[uint64]ForwardRecord
     rwLock              *sync.RWMutex
     //TODO deleteDocSet        
 }
 
 func NewMiniIndex() *MiniIndex {
-    return &MiniIndex{true, 0, 0, make(RawIndex), new(sync.RWMutex)}
+    return &MiniIndex{
+        Initialized:        true,
+        TotalDocumentNum:   0,
+        TotalTermNum:       0,
+        rawIndex:           make(RawIndex),
+        forwardRecords:     make(map[uint64]ForwardRecord),
+        rwLock:             new(sync.RWMutex)}
 }
 
 func (this *MiniIndex)merge(i1 RawIndex, i2 RawIndex) RawIndex {
@@ -58,9 +67,28 @@ func (this *MiniIndex)merge(i1 RawIndex, i2 RawIndex) RawIndex {
     return mergedRawIndex
 }
 
-func (this *MiniIndex)AddRawIndex(rawIndex RawIndex) error {
+func (this *MiniIndex) AddRawIndex(rawIndex RawIndex) error {
     this.rwLock.Lock()
-    this.innerRawIndex = this.merge(this.innerRawIndex, rawIndex)
+    this.rawIndex = this.merge(this.rawIndex, rawIndex)
+    this.rwLock.Unlock()
+    return nil
+}
+
+func (this *MiniIndex) AddInvertRecord(ir InvertRecord) error {
+    //TODO
+    return nil
+}
+
+func (this *MiniIndex) AddOrUpdateForwardRecord(fr ForwardRecord) error {
+    curRecord, found := this.forwardRecords[fr.DocId]
+    this.rwLock.Lock()
+    if !found {
+        this.forwardRecords[fr.DocId] = fr
+    } else {
+        for k, v := range fr.Fields {
+            curRecord.Fields[k] = v
+        }
+    }
     this.rwLock.Unlock()
     return nil
 }
