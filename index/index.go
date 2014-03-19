@@ -2,6 +2,7 @@ package index
 
 import (
     "sync"
+    "fmt"
 )
 
 type InvertNode struct {
@@ -12,6 +13,9 @@ type InvertNode struct {
 }
 
 type TermSign uint64
+func (termSign TermSign) String() string {
+    return fmt.Sprintf("[%016x]", uint64(termSign))
+}
 type InvertList struct {
     Term    string
     Type    string

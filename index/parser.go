@@ -57,12 +57,13 @@ type InvertRecordElement struct {
     Type    string
     Fields  []KV
 }
+
 type InvertRecord struct {
     DocId   uint64
     Inverts []InvertRecordElement
 }
 
-func (parser *Parser) ParseInvertRecord(line string) (RawIndex, bool) {
+func (parser *Parser) ParseInvertRecord(line string) (InvertRecord, error) {
     /*
         parse JSON-format invert index line
         {
@@ -89,17 +90,24 @@ func (parser *Parser) ParseInvertRecord(line string) (RawIndex, bool) {
         }
     */
 
-    ok := true
     var invertRecord InvertRecord
-    invertIndex := make(RawIndex)
 
     err := json.Unmarshal([]byte(line), &invertRecord)
     if err != nil {
         fmt.Printf("json parse failed. %v [%s]\n", err, line)
-        return invertIndex, false
+        return invertRecord, err
     }
     fmt.Printf("%v\n", invertRecord)
+    return invertRecord, nil
+}
 
+
+func (parser *Parser) ParseRawIndex(line string) (RawIndex, error) {
+    invertIndex := make(RawIndex)
+    invertRecord, err := parser.ParseInvertRecord(line)
+    if err != nil {
+        return invertIndex, err
+    }
     for _, invert := range invertRecord.Inverts {
         fmt.Printf("%v\n", invert)
         for _, kv := range invert.Fields {
@@ -110,7 +118,7 @@ func (parser *Parser) ParseInvertRecord(line string) (RawIndex, bool) {
             h := fnv.New64()
             io.WriteString(h, invert.Type + "_" + term)     //term_iphone
             termSign := TermSign(h.Sum64())
-            fmt.Printf("termSign: %d\n", termSign)
+            fmt.Printf("termSign: %v\n", termSign)
             //push back to invert list
             invertNode := InvertNode{invertRecord.DocId, payload}
             invertList, ok := invertIndex[termSign]
@@ -126,5 +134,5 @@ func (parser *Parser) ParseInvertRecord(line string) (RawIndex, bool) {
     }
 
     fmt.Printf("invertIndex: %v\n", invertIndex)
-    return invertIndex, ok
+    return invertIndex, nil
 }
