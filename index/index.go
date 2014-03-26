@@ -42,7 +42,7 @@ type MiniIndex struct {
     rawIndex            RawIndex
     forwardRecords      map[uint64]ForwardRecord
     rwLock              *sync.RWMutex
-    //TODO deleteDocSet        
+    deleteDocSet        map[uint64]bool
 }
 
 func NewMiniIndex() *MiniIndex {
@@ -90,6 +90,7 @@ func (this *MiniIndex) AddInvertRecord(ir InvertRecord) error {
             fmt.Printf("termSign: %v\n", termSign)
             //push back to invert list
             invertNode := InvertNode{ir.DocId, payload}
+            this.rwLock.Lock()
             invertList, ok := this.rawIndex[termSign]
             if !ok {
                 var newInvertList InvertList
@@ -99,6 +100,7 @@ func (this *MiniIndex) AddInvertRecord(ir InvertRecord) error {
             }
             invertList.InvertNodes = append(invertList.InvertNodes, invertNode)
             this.rawIndex[termSign] = invertList
+            this.rwLock.Unlock()
         }
     }
     return nil
@@ -116,4 +118,17 @@ func (this *MiniIndex) AddOrUpdateForwardRecord(fr ForwardRecord) error {
     }
     this.rwLock.Unlock()
     return nil
+}
+
+func (this *MiniIndex) DeleteDocument(docId uint64) {
+    this.rwLock.Lock()
+    this.deleteDocSet[docId] = true
+    this.rwLock.Unlock()
+}
+
+func (this *MiniIndex) DocumentExists(docId uint64) bool {
+    this.rwLock.Lock()
+    _, deleted := this.deleteDocSet[docId]
+    this.rwLock.Unlock()
+    return !deleted
 }
