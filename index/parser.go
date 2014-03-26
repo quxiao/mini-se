@@ -3,8 +3,6 @@ package index
 import (
     "fmt"
     "encoding/json"
-    "io"
-    "hash/fnv"
 )
 
 type ForwardRecord struct {
@@ -24,6 +22,20 @@ type Parser struct {
 
 func NewParser(dirName string, fileName string) *Parser {
     return &Parser{dirName, fileName}
+}
+
+type KV struct {
+    K   string
+    V   string
+}
+type InvertRecordElement struct {
+    Type    string
+    Fields  []KV
+}
+
+type InvertRecord struct {
+    DocId   uint64
+    Inverts []InvertRecordElement
 }
 
 func (parser *Parser) ParseForwardRecord(line string) (*ForwardRecord, bool) {
@@ -47,20 +59,6 @@ func (parser *Parser) ParseForwardRecord(line string) (*ForwardRecord, bool) {
 
     fmt.Printf("%v, %v\n", r, ok)
     return r, ok
-}
-
-type KV struct {
-    K   string
-    V   string
-}
-type InvertRecordElement struct {
-    Type    string
-    Fields  []KV
-}
-
-type InvertRecord struct {
-    DocId   uint64
-    Inverts []InvertRecordElement
 }
 
 func (parser *Parser) ParseInvertRecord(line string) (InvertRecord, error) {
@@ -101,38 +99,3 @@ func (parser *Parser) ParseInvertRecord(line string) (InvertRecord, error) {
     return invertRecord, nil
 }
 
-
-func (parser *Parser) ParseRawIndex(line string) (RawIndex, error) {
-    invertIndex := make(RawIndex)
-    invertRecord, err := parser.ParseInvertRecord(line)
-    if err != nil {
-        return invertIndex, err
-    }
-    for _, invert := range invertRecord.Inverts {
-        fmt.Printf("%v\n", invert)
-        for _, kv := range invert.Fields {
-            fmt.Printf("k: [%s] -> v: [%s]\n", kv.K, kv.V)
-            term := kv.K
-            payload := kv.V
-            //make uint64 sign
-            h := fnv.New64()
-            io.WriteString(h, invert.Type + "_" + term)     //term_iphone
-            termSign := TermSign(h.Sum64())
-            fmt.Printf("termSign: %v\n", termSign)
-            //push back to invert list
-            invertNode := InvertNode{invertRecord.DocId, payload}
-            invertList, ok := invertIndex[termSign]
-            if !ok {
-                var newInvertList InvertList
-                newInvertList.Term = term
-                newInvertList.Type = invert.Type
-                invertList = newInvertList
-            }
-            invertList.InvertNodes = append(invertList.InvertNodes, invertNode)
-            invertIndex[termSign] = invertList
-        }
-    }
-
-    fmt.Printf("invertIndex: %v\n", invertIndex)
-    return invertIndex, nil
-}

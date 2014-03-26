@@ -48,43 +48,6 @@ func TestForwardRecordNormal1(t *testing.T) {
     }
 }
 
-func TestRawIndexNormal1(t *testing.T) {
-    line := `
-        {
-            "docid": 12345,
-            "inverts": [
-                {
-                    "type": "term", 
-                    "fields": [{
-                        "k": "iphone",
-                        "v": "1.00"
-                    }, {
-                        "k": "5s",
-                        "v": "0.001"
-                    }]
-                },{
-                    "type": "category",
-                    "fields": [{
-                        "k": "111000"
-                    }, {
-                        "k": "113000"
-                    }]
-                }
-            ]
-        }
-    `
-
-    parser := Parser{}
-    r, err := parser.ParseRawIndex(line)
-    if err != nil {
-        t.Errorf("parse failed")
-    }
-
-    if len(r) != 4 {
-        t.Errorf("len[%d] != 4", len(r))
-    }
-}
-
 func TestParseInvertRecord(t *testing.T) {
     line := `
         {

@@ -3,6 +3,8 @@ package index
 import (
     "sync"
     "fmt"
+    "io"
+    "hash/fnv"
 )
 
 type InvertNode struct {
@@ -35,7 +37,7 @@ type DocumentNode struct {
 //MiniIndex wraps all interface for indexing
 type MiniIndex struct {
     Initialized         bool
-    TotalDocumentNum    uint64
+    TotalDocumentNum    uint64      // max DocId, more or less
     TotalTermNum        uint64
     rawIndex            RawIndex
     forwardRecords      map[uint64]ForwardRecord
@@ -75,7 +77,30 @@ func (this *MiniIndex) AddRawIndex(rawIndex RawIndex) error {
 }
 
 func (this *MiniIndex) AddInvertRecord(ir InvertRecord) error {
-    //TODO
+    for _, ire := range(ir.Inverts) {
+        fmt.Println(ire)
+        invertType := ire.Type
+        for _, kv := range(ire.Fields) {
+            term := kv.K
+            payload := kv.V
+            //make uint64 sign
+            h := fnv.New64()
+            io.WriteString(h, invertType + "_" + term)     //term_iphone
+            termSign := TermSign(h.Sum64())
+            fmt.Printf("termSign: %v\n", termSign)
+            //push back to invert list
+            invertNode := InvertNode{ir.DocId, payload}
+            invertList, ok := this.rawIndex[termSign]
+            if !ok {
+                var newInvertList InvertList
+                newInvertList.Term = term
+                newInvertList.Type = invertType
+                invertList = newInvertList
+            }
+            invertList.InvertNodes = append(invertList.InvertNodes, invertNode)
+            this.rawIndex[termSign] = invertList
+        }
+    }
     return nil
 }
 
