@@ -26,7 +26,7 @@ type ForwardRecordParser interface {
 
 type SimpleForwardRecordParser struct {}
 
-func (this *SimpleForwardRecordParser) Parse(line string) (*ForwardRecord, error) {
+func (this SimpleForwardRecordParser) Parse(line string) (*ForwardRecord, error) {
     /*
         parse JSON-format forward record line
         "{"docid": 123456, "fields": {"key1": "value1", "key2": "value2"}}"
@@ -78,7 +78,7 @@ type InvertRecordParser interface {
 
 type SimpleInvertRecordParser struct {}
 
-func (this *SimpleInvertRecordParser) Parse(line string) (*InvertRecord, error) {
+func (this SimpleInvertRecordParser) Parse(line string) (*InvertRecord, error) {
     /*
         parse JSON-format invert index line
         {
@@ -122,16 +122,14 @@ func (this *SimpleInvertRecordParser) Parse(line string) (*InvertRecord, error) 
 // parser wraper
 ////////////////////////////////////////
 type MiniIndexParser struct {
-    forwardParser   SimpleForwardRecordParser
-    invertParser    SimpleInvertRecordParser
 }
 
-func (this *MiniIndexParser) ParseForwardRecord(line string) (*ForwardRecord, error) {
-    return this.forwardParser.Parse(line)
+func (this *MiniIndexParser) ParseForwardRecord(forwardParser ForwardRecordParser, line string) (*ForwardRecord, error) {
+    return forwardParser.Parse(line)
 }
 
-func (this *MiniIndexParser) ParseInvertRecord(line string) (*InvertRecord, error) {
-    return this.invertParser.Parse(line)
+func (this *MiniIndexParser) ParseInvertRecord(invertParser InvertRecordParser, line string) (*InvertRecord, error) {
+    return invertParser.Parse(line)
 }
 
 ////////////////////////////////////////
