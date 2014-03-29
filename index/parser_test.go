@@ -6,43 +6,43 @@ import (
 
 func TestForwardRecordNil(t *testing.T) {
     line := ``
-    parser := Parser{}
-    _, ok := parser.ParseForwardRecord(line)
-    if ok {
-        t.Errorf("shoud be not ok!")
+    parser := MiniIndexParser{}
+    _, err := parser.ParseForwardRecord(line)
+    if err == nil {
+        t.Errorf("shoud be not err!")
     }
 }
 
 func TestForwardRecordEmptyJson(t *testing.T) {
     line := `{}`
-    parser := Parser{}
-    _, ok := parser.ParseForwardRecord(line)
-    if ok {
-        t.Errorf("shoud be not ok!")
+    parser := MiniIndexParser{}
+    _, err := parser.ParseForwardRecord(line)
+    if err == nil {
+        t.Errorf("shoud be not err!")
     }
 }
 
 func TestForwardRecordNormal1(t *testing.T) {
     line := `{"docid": 123456, "fields": {"key1": "value1", "key2": "value2"}}`
-    parser := Parser{}
-    r, ok := parser.ParseForwardRecord(line)
-    if !ok {
-        t.Errorf("error! %v", ok)
+    parser := MiniIndexParser{}
+    r, err := parser.ParseForwardRecord(line)
+    if err != nil {
+        t.Errorf("error! %v", err)
     }
     if r.DocId <= 0 {
         t.Errorf("docid <= 0")
     }
 
     {
-        v, ok := r.Fields["key1"]
-        if !ok || v != "value1" {
+        v, err := r.Fields["key1"]
+        if !err || v != "value1" {
             t.Errorf("parse error")
         }
     }
 
     {
-        v, ok := r.Fields["key2"]
-        if !ok || v != "value2" {
+        v, err := r.Fields["key2"]
+        if !err || v != "value2" {
             t.Errorf("parse error")
         }
     }
@@ -73,7 +73,7 @@ func TestParseInvertRecord(t *testing.T) {
             ]
         }
     `
-    parser := Parser{}
+    parser := MiniIndexParser{}
     invertRecord, err := parser.ParseInvertRecord(line)
     if err != nil {
         t.Errorf("parse invert record failed")

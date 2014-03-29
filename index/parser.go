@@ -5,6 +5,10 @@ import (
     "encoding/json"
 )
 
+////////////////////////////////////////
+// forward record, including document's arguments for filtering and sorting, such as author, title, isbn, etc.
+////////////////////////////////////////
+
 type ForwardRecord struct {
     DocId   uint64
     Fields  map[string]string
@@ -15,14 +19,39 @@ func NewForwardRecord() *ForwardRecord {
     return &ForwardRecord{0, m}
 }
 
-type Parser struct {
-    dirName    string
-    fileName   string
+// forward record parsing interface
+type ForwardRecordParser interface {
+    Parse(line string) (*ForwardRecord, error)
 }
 
-func NewParser(dirName string, fileName string) *Parser {
-    return &Parser{dirName, fileName}
+type SimpleForwardRecordParser struct {}
+
+func (this *SimpleForwardRecordParser) Parse(line string) (*ForwardRecord, error) {
+    /*
+        parse JSON-format forward record line
+        "{"docid": 123456, "fields": {"key1": "value1", "key2": "value2"}}"
+    */
+    r := NewForwardRecord()
+    err := json.Unmarshal([]byte(line), &r)
+    if err != nil {
+        fmt.Printf("%v\n", err)
+        return r, err
+    }
+
+    if r.DocId <= 0 {
+        fmt.Printf("docid[%v] <=0\n", r.DocId)
+        return r, fmt.Errorf("docid[%v] <=0\n", r.DocId)
+    }
+
+    return r, nil
 }
+
+////////////////////////////////////////
+
+
+////////////////////////////////////////
+// invert record for triggering, such as term, category
+////////////////////////////////////////
 
 type KV struct {
     K   string
@@ -38,30 +67,18 @@ type InvertRecord struct {
     Inverts []InvertRecordElement
 }
 
-func (parser *Parser) ParseForwardRecord(line string) (*ForwardRecord, bool) {
-    /*
-        parse JSON-format forward record line
-        "{"docid": 123456, "fields": {"key1": "value1", "key2": "value2"}}"
-    */
-
-    ok := true
-    r := NewForwardRecord()
-    err := json.Unmarshal([]byte(line), &r)
-    if err != nil {
-        fmt.Printf("%v\n", err)
-        ok = false
-    }
-
-    if r.DocId <= 0 {
-        fmt.Printf("docid[%v] <=0\n", r.DocId)
-        ok = false
-    }
-
-    fmt.Printf("%v, %v\n", r, ok)
-    return r, ok
+func NewInvertRecord() *InvertRecord {
+    return &InvertRecord{}
 }
 
-func (parser *Parser) ParseInvertRecord(line string) (InvertRecord, error) {
+// invert record parsing interface
+type InvertRecordParser interface {
+    Parse(line string) (*InvertRecord, error)
+}
+
+type SimpleInvertRecordParser struct {}
+
+func (this *SimpleInvertRecordParser) Parse(line string) (*InvertRecord, error) {
     /*
         parse JSON-format invert index line
         {
@@ -88,9 +105,9 @@ func (parser *Parser) ParseInvertRecord(line string) (InvertRecord, error) {
         }
     */
 
-    var invertRecord InvertRecord
+    invertRecord := NewInvertRecord()
 
-    err := json.Unmarshal([]byte(line), &invertRecord)
+    err := json.Unmarshal([]byte(line), invertRecord)
     if err != nil {
         fmt.Printf("json parse failed. %v [%s]\n", err, line)
         return invertRecord, err
@@ -98,4 +115,25 @@ func (parser *Parser) ParseInvertRecord(line string) (InvertRecord, error) {
     fmt.Printf("%v\n", invertRecord)
     return invertRecord, nil
 }
+////////////////////////////////////////
+
+
+////////////////////////////////////////
+// parser wraper
+////////////////////////////////////////
+type MiniIndexParser struct {
+    forwardParser   SimpleForwardRecordParser
+    invertParser    SimpleInvertRecordParser
+}
+
+func (this *MiniIndexParser) ParseForwardRecord(line string) (*ForwardRecord, error) {
+    return this.forwardParser.Parse(line)
+}
+
+func (this *MiniIndexParser) ParseInvertRecord(line string) (*InvertRecord, error) {
+    return this.invertParser.Parse(line)
+}
+
+////////////////////////////////////////
+
 
