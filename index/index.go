@@ -36,14 +36,14 @@ type DocumentNode struct {
 
 type IndexStats struct {
     DocIdSet            map[uint64]bool
-    TermSet             map[uint64]bool
+    SignSet             map[TermSign]bool
     lock                sync.RWMutex
 }
 
 func NewIndexStats() IndexStats {
     return IndexStats{
         DocIdSet:   make(map[uint64]bool),
-        TermSet:    make(map[uint64]bool),
+        SignSet:    make(map[TermSign]bool),
         lock:       sync.RWMutex{},
     }
 }
@@ -54,9 +54,9 @@ func (this *IndexStats) AddDocId(docId uint64) {
     this.lock.Unlock()
 }
 
-func (this *IndexStats) AddTerm(term uint64) {
+func (this *IndexStats) AddSign(sign TermSign) {
     this.lock.Lock()
-    this.TermSet[term] = true
+    this.SignSet[sign] = true
     this.lock.Unlock()
 }
 
@@ -67,9 +67,9 @@ func (this *IndexStats) GetDocNum() int {
     return n
 }
 
-func (this *IndexStats) GetTermNum() int {
+func (this *IndexStats) GetSignNum() int {
     this.lock.RLock()
-    n := len(this.TermSet)
+    n := len(this.SignSet)
     this.lock.RUnlock()
     return n
 }
@@ -77,7 +77,7 @@ func (this *IndexStats) GetTermNum() int {
 //MiniIndex wraps all interface for indexing
 type MiniIndex struct {
     initialized         bool
-    indexStats          IndexStats
+    stats               IndexStats
     rawIndex            RawIndex
     forwardRecords      map[uint64]ForwardRecord
     rwLock              sync.RWMutex
@@ -87,7 +87,7 @@ type MiniIndex struct {
 func NewMiniIndex() *MiniIndex {
     return &MiniIndex{
         initialized:        true,
-        indexStats:         NewIndexStats(),
+        stats:              NewIndexStats(),
         rawIndex:           make(RawIndex),
         forwardRecords:     make(map[uint64]ForwardRecord),
         rwLock:             sync.RWMutex{}}
@@ -115,6 +115,7 @@ func (this *MiniIndex) AddRawIndex(rawIndex RawIndex) error {
 }
 
 func (this *MiniIndex) AddInvertRecord(ir InvertRecord) error {
+    this.stats.AddDocId(ir.DocId)
     for _, ire := range(ir.Inverts) {
         fmt.Println(ire)
         invertType := ire.Type
@@ -139,6 +140,7 @@ func (this *MiniIndex) AddInvertRecord(ir InvertRecord) error {
             invertList.InvertNodes = append(invertList.InvertNodes, invertNode)
             this.rawIndex[termSign] = invertList
             this.rwLock.Unlock()
+            this.stats.AddSign(termSign)
         }
     }
     return nil
@@ -158,6 +160,8 @@ func (this *MiniIndex) AddOrUpdateForwardRecord(fr ForwardRecord) error {
         }
     }
     this.rwLock.Unlock()
+
+    this.stats.AddDocId(fr.DocId)
     return nil
 }
 
@@ -178,11 +182,11 @@ func (this *MiniIndex) DocumentExists(docId uint64) bool {
 // Parse forward and invert record
 ////////////////////////////////////
 
-func (this *MiniIndex) ParseForwardRecord(forwardParser ForwardRecordParser, line string) (*ForwardRecord, error) {
+func (this *MiniIndex) ParseForwardRecord(forwardParser ForwardRecordParser, line string) (ForwardRecord, error) {
     return forwardParser.Parse(line)
 }
 
-func (this *MiniIndex) ParseInvertRecord(invertParser InvertRecordParser, line string) (*InvertRecord, error) {
+func (this *MiniIndex) ParseInvertRecord(invertParser InvertRecordParser, line string) (InvertRecord, error) {
     return invertParser.Parse(line)
 }
 

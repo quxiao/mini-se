@@ -22,12 +22,12 @@ func NewForwardRecord() *ForwardRecord {
 
 // forward record parsing interface
 type ForwardRecordParser interface {
-    Parse(line string) (*ForwardRecord, error)
+    Parse(line string) (ForwardRecord, error)
 }
 
 type SimpleForwardRecordParser struct {}
 
-func (this SimpleForwardRecordParser) Parse(line string) (*ForwardRecord, error) {
+func (this SimpleForwardRecordParser) Parse(line string) (ForwardRecord, error) {
     /*
         parse JSON-format forward record line
         "{"docid": 123456, "fields": {"key1": "value1", "key2": "value2"}}"
@@ -36,15 +36,15 @@ func (this SimpleForwardRecordParser) Parse(line string) (*ForwardRecord, error)
     err := json.Unmarshal([]byte(line), &r)
     if err != nil {
         fmt.Printf("%v\n", err)
-        return r, err
+        return *r, err
     }
 
     if r.DocId <= 0 {
         fmt.Printf("docid[%v] <=0\n", r.DocId)
-        return r, fmt.Errorf("docid[%v] <=0\n", r.DocId)
+        return *r, fmt.Errorf("docid[%v] <=0\n", r.DocId)
     }
 
-    return r, nil
+    return *r, nil
 }
 
 ////////////////////////////////////////
@@ -75,12 +75,12 @@ func NewInvertRecord() *InvertRecord {
 
 // invert record parsing interface
 type InvertRecordParser interface {
-    Parse(line string) (*InvertRecord, error)
+    Parse(line string) (InvertRecord, error)
 }
 
 type SimpleInvertRecordParser struct {}
 
-func (this SimpleInvertRecordParser) Parse(line string) (*InvertRecord, error) {
+func (this SimpleInvertRecordParser) Parse(line string) (InvertRecord, error) {
     /*
         parse JSON-format invert index line
         {
@@ -109,13 +109,13 @@ func (this SimpleInvertRecordParser) Parse(line string) (*InvertRecord, error) {
 
     invertRecord := NewInvertRecord()
 
-    err := json.Unmarshal([]byte(line), invertRecord)
+    err := json.Unmarshal([]byte(line), &invertRecord)
     if err != nil {
         fmt.Printf("json parse failed. %v [%s]\n", err, line)
-        return invertRecord, err
+        return *invertRecord, err
     }
     fmt.Printf("%v\n", invertRecord)
-    return invertRecord, nil
+    return *invertRecord, nil
 }
 ////////////////////////////////////////
 
