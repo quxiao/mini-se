@@ -6,9 +6,9 @@ import (
 
 func TestForwardRecordNil(t *testing.T) {
     line := ``
-    parser := MiniIndexParser{}
+    index := NewMiniIndex()
     forwardParser := SimpleForwardRecordParser{}
-    _, err := parser.ParseForwardRecord(forwardParser, line)
+    _, err := index.ParseForwardRecord(forwardParser, line)
     if err == nil {
         t.Errorf("shoud be not err!")
     }
@@ -16,9 +16,9 @@ func TestForwardRecordNil(t *testing.T) {
 
 func TestForwardRecordEmptyJson(t *testing.T) {
     line := `{}`
-    parser := MiniIndexParser{}
+    index := NewMiniIndex()
     forwardParser := SimpleForwardRecordParser{}
-    _, err := parser.ParseForwardRecord(forwardParser, line)
+    _, err := index.ParseForwardRecord(forwardParser, line)
     if err == nil {
         t.Errorf("shoud be not err!")
     }
@@ -26,9 +26,9 @@ func TestForwardRecordEmptyJson(t *testing.T) {
 
 func TestForwardRecordNormal1(t *testing.T) {
     line := `{"docid": 123456, "fields": {"key1": "value1", "key2": "value2"}}`
-    parser := MiniIndexParser{}
+    index := NewMiniIndex()
     forwardParser := SimpleForwardRecordParser{}
-    r, err := parser.ParseForwardRecord(forwardParser, line)
+    r, err := index.ParseForwardRecord(forwardParser, line)
     if err != nil {
         t.Errorf("error! %v", err)
     }
@@ -76,9 +76,9 @@ func TestParseInvertRecord(t *testing.T) {
             ]
         }
     `
-    parser := MiniIndexParser{}
+    index := NewMiniIndex()
     invertParser := SimpleInvertRecordParser{}
-    invertRecord, err := parser.ParseInvertRecord(invertParser, line)
+    invertRecord, err := index.ParseInvertRecord(invertParser, line)
     if err != nil {
         t.Errorf("parse invert record failed")
     }

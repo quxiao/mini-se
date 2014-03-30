@@ -107,7 +107,10 @@ func (this *MiniIndex) AddInvertRecord(ir InvertRecord) error {
 }
 
 func (this *MiniIndex) AddOrUpdateForwardRecord(fr ForwardRecord) error {
+    this.rwLock.RLock()
     curRecord, found := this.forwardRecords[fr.DocId]
+    this.rwLock.RUnlock()
+
     this.rwLock.Lock()
     if !found {
         this.forwardRecords[fr.DocId] = fr
@@ -127,8 +130,23 @@ func (this *MiniIndex) DeleteDocument(docId uint64) {
 }
 
 func (this *MiniIndex) DocumentExists(docId uint64) bool {
-    this.rwLock.Lock()
+    this.rwLock.RLock()
     _, deleted := this.deleteDocSet[docId]
-    this.rwLock.Unlock()
+    this.rwLock.RUnlock()
     return !deleted
 }
+
+////////////////////////////////////
+// Parse forward and invert record
+////////////////////////////////////
+
+func (this *MiniIndex) ParseForwardRecord(forwardParser ForwardRecordParser, line string) (*ForwardRecord, error) {
+    return forwardParser.Parse(line)
+}
+
+func (this *MiniIndex) ParseInvertRecord(invertParser InvertRecordParser, line string) (*InvertRecord, error) {
+    return invertParser.Parse(line)
+}
+
+////////////////////////////////////
+

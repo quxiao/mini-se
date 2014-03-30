@@ -6,7 +6,8 @@ import (
 )
 
 ////////////////////////////////////////
-// forward record, including document's arguments for filtering and sorting, such as author, title, isbn, etc.
+// forward record, including document's arguments for filtering and sorting, 
+// such as author, title, isbn, etc.
 ////////////////////////////////////////
 
 type ForwardRecord struct {
@@ -50,7 +51,8 @@ func (this SimpleForwardRecordParser) Parse(line string) (*ForwardRecord, error)
 
 
 ////////////////////////////////////////
-// invert record for triggering, such as term, category
+// invert record for triggering, 
+// such as term, category
 ////////////////////////////////////////
 
 type KV struct {
@@ -85,16 +87,16 @@ func (this SimpleInvertRecordParser) Parse(line string) (*InvertRecord, error) {
             "docid": 12345,
             "inverts": [
                 {
-                    "type": "term",      //term
+                    "type": "term",         //invert type
                     "fields": [{
-                        "k": "iphone",
-                        "v": "1.00"
+                        "k": "iphone",      //invert value
+                        "v": "1.00"         //payload
                     }, {
                         "k": "5s",
                         "v": "0.001"
                     }]
                 },{
-                    "type": "category",      //category
+                    "type": "category",
                     "fields": [{
                         "k": "111000",
                     }, {
@@ -116,22 +118,4 @@ func (this SimpleInvertRecordParser) Parse(line string) (*InvertRecord, error) {
     return invertRecord, nil
 }
 ////////////////////////////////////////
-
-
-////////////////////////////////////////
-// parser wraper
-////////////////////////////////////////
-type MiniIndexParser struct {
-}
-
-func (this *MiniIndexParser) ParseForwardRecord(forwardParser ForwardRecordParser, line string) (*ForwardRecord, error) {
-    return forwardParser.Parse(line)
-}
-
-func (this *MiniIndexParser) ParseInvertRecord(invertParser InvertRecordParser, line string) (*InvertRecord, error) {
-    return invertParser.Parse(line)
-}
-
-////////////////////////////////////////
-
 
