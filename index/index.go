@@ -50,28 +50,26 @@ func NewIndexStats() IndexStats {
 
 func (this *IndexStats) AddDocId(docId uint64) {
     this.lock.Lock()
+    defer this.lock.Unlock()
     this.DocIdSet[docId] = true
-    this.lock.Unlock()
 }
 
 func (this *IndexStats) AddSign(sign TermSign) {
     this.lock.Lock()
+    defer this.lock.Unlock()
     this.SignSet[sign] = true
-    this.lock.Unlock()
 }
 
 func (this *IndexStats) GetDocNum() int {
     this.lock.RLock()
-    n := len(this.DocIdSet)
-    this.lock.RUnlock()
-    return n
+    defer this.lock.RUnlock()
+    return len(this.DocIdSet)
 }
 
 func (this *IndexStats) GetSignNum() int {
     this.lock.RLock()
-    n := len(this.SignSet)
-    this.lock.RUnlock()
-    return n
+    defer this.lock.RUnlock()
+    return len(this.SignSet)
 }
 
 //MiniIndex wraps all interface for indexing
@@ -109,8 +107,8 @@ func (this *MiniIndex)merge(i1 RawIndex, i2 RawIndex) RawIndex {
 
 func (this *MiniIndex) AddRawIndex(rawIndex RawIndex) error {
     this.rwLock.Lock()
+    defer this.rwLock.Unlock()
     this.rawIndex = this.merge(this.rawIndex, rawIndex)
-    this.rwLock.Unlock()
     return nil
 }
 
@@ -167,14 +165,14 @@ func (this *MiniIndex) AddOrUpdateForwardRecord(fr ForwardRecord) error {
 
 func (this *MiniIndex) DeleteDocument(docId uint64) {
     this.rwLock.Lock()
+    defer this.rwLock.Unlock()
     this.deleteDocSet[docId] = true
-    this.rwLock.Unlock()
 }
 
 func (this *MiniIndex) DocumentExists(docId uint64) bool {
     this.rwLock.RLock()
+    defer this.rwLock.RUnlock()
     _, deleted := this.deleteDocSet[docId]
-    this.rwLock.RUnlock()
     return !deleted
 }
 
