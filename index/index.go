@@ -14,7 +14,7 @@ type InvertNode struct {
     //Offset  uint32
 }
 
-type TermSign uint64        //usually keyword + type, such as "iphone_query", or "camera_category"
+type TermSign uint64        //usually type + keyword, such as "query_iphone", or "category_camera"
 
 func (termSign TermSign) String() string {
     return fmt.Sprintf("[%016x]", uint64(termSign))
@@ -34,25 +34,63 @@ type DocumentNode struct {
     Payload string
 }
 
+type IndexStats struct {
+    DocIdSet            map[uint64]bool
+    TermSet             map[uint64]bool
+    lock                sync.RWMutex
+}
+
+func NewIndexStats() IndexStats {
+    return IndexStats{
+        DocIdSet:   make(map[uint64]bool),
+        TermSet:    make(map[uint64]bool),
+        lock:       sync.RWMutex{},
+    }
+}
+
+func (this *IndexStats) AddDocId(docId uint64) {
+    this.lock.Lock()
+    this.DocIdSet[docId] = true
+    this.lock.Unlock()
+}
+
+func (this *IndexStats) AddTerm(term uint64) {
+    this.lock.Lock()
+    this.TermSet[term] = true
+    this.lock.Unlock()
+}
+
+func (this *IndexStats) GetDocNum() int {
+    this.lock.RLock()
+    n := len(this.DocIdSet)
+    this.lock.RUnlock()
+    return n
+}
+
+func (this *IndexStats) GetTermNum() int {
+    this.lock.RLock()
+    n := len(this.TermSet)
+    this.lock.RUnlock()
+    return n
+}
+
 //MiniIndex wraps all interface for indexing
 type MiniIndex struct {
-    Initialized         bool
-    TotalDocumentNum    uint64      // max DocId, more or less
-    TotalTermNum        uint64
+    initialized         bool
+    indexStats          IndexStats
     rawIndex            RawIndex
     forwardRecords      map[uint64]ForwardRecord
-    rwLock              *sync.RWMutex
+    rwLock              sync.RWMutex
     deleteDocSet        map[uint64]bool
 }
 
 func NewMiniIndex() *MiniIndex {
     return &MiniIndex{
-        Initialized:        true,
-        TotalDocumentNum:   0,
-        TotalTermNum:       0,
+        initialized:        true,
+        indexStats:         NewIndexStats(),
         rawIndex:           make(RawIndex),
         forwardRecords:     make(map[uint64]ForwardRecord),
-        rwLock:             new(sync.RWMutex)}
+        rwLock:             sync.RWMutex{}}
 }
 
 func (this *MiniIndex)merge(i1 RawIndex, i2 RawIndex) RawIndex {

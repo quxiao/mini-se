@@ -84,7 +84,7 @@ func (this SimpleInvertRecordParser) Parse(line string) (*InvertRecord, error) {
     /*
         parse JSON-format invert index line
         {
-            "docid": 12345,
+            "docid": 12345,     //attention: all input docid is outter docid
             "inverts": [
                 {
                     "type": "term",         //invert type
